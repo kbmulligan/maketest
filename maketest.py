@@ -1,6 +1,7 @@
 import random
 import re
 import time
+import sys
 
 mqffn = 'mqf'
 
@@ -9,6 +10,8 @@ TOTAL_QUESTIONS = 106
 TEST_QUESTIONS = 25
 
 TIME_DELAY = 0
+
+SHOW_STATS = False
 
 questions = {}
 
@@ -45,7 +48,7 @@ def read_file(fn):
 
 def remove_excess_newlines(data):
     match = excess_newlines.subn('\n', data)
-    if match[1]:
+    if match[1] and SHOW_STATS:
         print 'NEWLINES REMOVED:', match[1]
     
     return match[0]
@@ -113,14 +116,36 @@ def delay():
     else:
         raw_input()
 
+def questions_from_file(f):
+    data = read_file(f)
+    clean_data = remove_excess_newlines(''.join(data))
+    split_data = split_q_and_a(clean_data)
+    questions = extract_questions(split_data)
+    return questions
+
 def check_all(qs):
     answer_errors = []
     ref_errors = []
+    answers = []
+
     for key in qs.keys():
         if extract_answer(qs[key]) == None:
             answer_errors.append(key)
         if extract_ref(qs[key]) == None:
             ref_errors.append(key)
+
+        answers.append(extract_answer(qs[key])[-1])
+
+    if SHOW_STATS:
+        a = answers.count('A')
+        b = answers.count('B')
+        c = answers.count('C')
+        d = answers.count('D')
+        
+        print 'A', a, '%.3f' % (float(a)/len(answers)), '|'*a
+        print 'B', b, '%.3f' % (float(b)/len(answers)), '|'*b
+        print 'C', c, '%.3f' % (float(c)/len(answers)), '|'*c
+        print 'D', d, '%.3f' % (float(d)/len(answers)), '|'*d
 
     # print 'Ans errors:', answer_errors
     # print 'Ref errors:', ref_errors
@@ -136,15 +161,16 @@ def do_check(questions):
         print 'Ans Errors:', checks[1]
     
 
-
 #### START HERE #######################
-data = read_file(mqffn)
-clean_data = remove_excess_newlines(''.join(data))
-split_data = split_q_and_a(clean_data)
-questions = extract_questions(split_data)
+if __name__ == "__main__":
+    if (len(sys.argv) < 2):
+        print("Usage: %s <number of questions> [master questions file]" % (sys.argv[0].split('\\')[-1]))
+        print('Example: %s 20 mqf.txt' % (sys.argv[0].split('\\')[-1]))
+    else:
+        
+        questions = questions_from_file(mqffn)
 
-do_check(questions)
+        do_check(questions)
 
-
-display_test(get_test(TEST_QUESTIONS), questions)
+        display_test(get_test(int(sys.argv[1])), questions)
 
